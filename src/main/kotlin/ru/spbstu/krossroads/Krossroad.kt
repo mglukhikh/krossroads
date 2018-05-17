@@ -14,8 +14,8 @@ data class Cell(val x: Int, val y: Int) {
 data class Line(val start: Cell, val end: Cell) : Sequence<Cell> {
 
     val dir: Direction = when {
-        start.x == end.x -> if (end.y > start.y) Direction.EAST else Direction.WEST
-        start.y == end.y -> if (end.x > start.x) Direction.SOUTH else Direction.NORTH
+        start.x == end.x -> if (end.y > start.y) Direction.SOUTH else Direction.NORTH
+        start.y == end.y -> if (end.x > start.x) Direction.EAST else Direction.WEST
         else -> throw AssertionError("Incorrect line: $start to $end")
     }
 
@@ -24,7 +24,7 @@ data class Line(val start: Cell, val end: Cell) : Sequence<Cell> {
     }
 
     inner class CellIterator : Iterator<Cell> {
-        var nextCell: Cell? = start
+        private var nextCell: Cell? = start
 
         override fun hasNext(): Boolean = nextCell != null
 
@@ -33,5 +33,28 @@ data class Line(val start: Cell, val end: Cell) : Sequence<Cell> {
             nextCell = if (result == end) null else result.move(dir)
             return result
         }
+    }
+}
+
+data class Curve(val start: Cell, val turn: Cell, val end: Cell) : Sequence<Cell> {
+
+    val first = Line(start, turn)
+    val second = Line(turn, end)
+
+    override fun iterator(): Iterator<Cell> {
+        return CompositeIterator()
+    }
+
+    inner class CompositeIterator : Iterator<Cell> {
+        private val firstIterator = first.iterator()
+        private val secondIterator = second.iterator()
+
+        init {
+            secondIterator.next()
+        }
+
+        override fun hasNext(): Boolean = firstIterator.hasNext() || secondIterator.hasNext()
+
+        override fun next(): Cell = if (firstIterator.hasNext()) firstIterator.next() else secondIterator.next()
     }
 }
